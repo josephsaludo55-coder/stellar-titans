@@ -1,0 +1,41 @@
+import type { GameState } from './gameTypes';
+
+export const initialGameState: GameState = {
+  playerMode: 'individual',
+  player: {
+    name: 'Commander Nova',
+    role: 'Mission architect',
+    experience: 'cadet',
+    focus: 'Earth orbit and lunar logistics',
+  },
+  team: null,
+  decisionHistory: [],
+  missionConfiguration: null,
+  selectedSpacecraftComponentIds: [],
+  selectedInstrumentIds: [],
+  selectedLaunchVehicleId: null,
+  selectedTrajectoryId: null,
+  resourcePlan: { initialFundingUsd: null, missionExpensesUsd: null },
+  missionEngineeringAdjustments: {
+    instrumentPowerMultiplier: 1,
+    scienceOutputMultiplier: 1,
+    dataVolumeMultiplier: 1,
+    communicationCapacityMultiplier: 1,
+    missionDurationDeltaDays: 0,
+    missionExpenseDeltaUsd: 0,
+    prioritizedObjectiveId: null,
+  },
+  missionEventDecisionHistory: [],
+  missionEvaluationHistory: [],
+  completedChapterIds: [],
+  achievementRecords: [],
+  missionSimulation: null,
+  mission: {
+    stage: 'welcome',
+    readiness: 18,
+    health: 86,
+    alerts: 2,
+  },
+  selectedMissionId: null,
+  isLoaded: false,
+};

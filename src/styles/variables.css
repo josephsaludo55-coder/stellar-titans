@@ -1,0 +1,18 @@
+:root {
+  --bg: #050d17;
+  --bg-elevated: #0b1928;
+  --bg-panel: rgba(9, 21, 33, 0.92);
+  --bg-panel-strong: rgba(12, 30, 48, 0.96);
+  --line: rgba(122, 176, 255, 0.28);
+  --cyan: #74ebff;
+  --blue: #5aa9ff;
+  --purple: #9f7dff;
+  --orange: #ffb066;
+  --green: #7ef0af;
+  --text: #edf8ff;
+  --muted: #b4c8d8;
+  --shadow: rgba(0, 0, 0, 0.4);
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+}
