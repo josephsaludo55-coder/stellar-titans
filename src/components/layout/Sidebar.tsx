@@ -36,7 +36,7 @@ export function Sidebar({ navItems, activeItemId, onNavigate, stage }: SidebarPr
 
   return <aside className="sidebar">
     <button type="button" className="sidebar-brand" onClick={() => onNavigate('welcome')}>
-      <span className="brand-mark" aria-hidden="true">✦</span><span><small>SPACE ADVENTURE</small><strong>BEYOND EARTH</strong></span>
+      <span className="brand-mark brand-mark-image" aria-hidden="true"><img src="/beyond-earth-logo.png" alt="" /></span><span><small>SPACE ADVENTURE</small><strong>BEYOND EARTH</strong></span>
     </button>
     <div className="sidebar-campaign"><span className="sidebar-orbit" aria-hidden="true">◉</span><span><small>YOUR MISSION</small><strong>{stageIndex < 0 ? 'READY TO PLAY' : `STEP ${stageIndex + 1} OF ${missionSteps.length}`}</strong></span><i /></div>
     <nav aria-label="Mission navigation" className="sidebar-nav">

@@ -80,7 +80,7 @@ export function WelcomeFeature({ onNavigate, onContinue, onNewFlight, hasSavedPr
       </div>
       <header className="welcome-header">
         <button type="button" className="welcome-brand" aria-label="Space Mission: Beyond Earth home" onClick={() => onNavigate('welcome')}>
-          <span className="brand-mark" aria-hidden="true">✦</span><span>BEYOND EARTH</span>
+          <span className="brand-mark brand-mark-image" aria-hidden="true"><img src="/beyond-earth-logo.png" alt="" /></span><span>BEYOND EARTH</span>
         </button>
         <span className="welcome-status"><i aria-hidden="true" /> FLIGHT SYSTEMS ONLINE</span>
       </header>

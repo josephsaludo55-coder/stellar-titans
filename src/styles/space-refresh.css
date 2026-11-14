@@ -1123,3 +1123,7 @@ summary { color: #dff2ff; }
   .welcome-astronaut-stage.is-hero { top: 25%; right: 0; width: 125px; opacity: .38; }
   .welcome-satellite { top: 68%; right: -32px; width: 190px; opacity: .52; }
 }
+.brand-mark-image { flex: 0 0 auto; padding: 0; overflow: hidden; border: 0; background: transparent !important; box-shadow: none !important; }
+.brand-mark-image img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.welcome-brand .brand-mark-image { width: 52px; height: 52px; }
+.sidebar-brand .brand-mark-image { width: 42px; height: 42px; }
