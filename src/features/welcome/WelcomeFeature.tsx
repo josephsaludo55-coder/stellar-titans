@@ -93,11 +93,11 @@ export function WelcomeFeature({ onNavigate, onContinue, onNewFlight, hasSavedPr
         <div className="welcome-actions">
           <div className="welcome-flight-actions">
           {hasSavedProgress ? (
-            <Button className="welcome-primary" onClick={onContinue}><span>CONTINUE FLIGHT</span><span className="action-arrow" aria-hidden="true">↗</span></Button>
+            <Button className="welcome-primary" disabled={!state.isLoaded} onClick={onContinue}><span>CONTINUE FLIGHT</span><span className="action-arrow" aria-hidden="true">↗</span></Button>
           ) : (
-            <Button className="welcome-primary" onClick={onNewFlight}><span>CHOOSE YOUR PILOT</span><span className="action-arrow" aria-hidden="true">↗</span></Button>
+            <Button className="welcome-primary" disabled={!state.isLoaded} onClick={onNewFlight}><span>CHOOSE YOUR PILOT</span><span className="action-arrow" aria-hidden="true">↗</span></Button>
           )}
-          {hasSavedProgress ? <Button variant="secondary" className="welcome-secondary welcome-new-flight" onClick={onNewFlight}>NEW FLIGHT <span aria-hidden="true">+</span></Button> : null}
+          {hasSavedProgress ? <Button variant="secondary" className="welcome-secondary welcome-new-flight" disabled={!state.isLoaded} onClick={onNewFlight}>NEW FLIGHT <span aria-hidden="true">+</span></Button> : null}
           </div>
           <div className="welcome-explore-actions" role="group" aria-label="Explore more">
             <button type="button" className="welcome-quick-link" onClick={() => onNavigate('academy')}>

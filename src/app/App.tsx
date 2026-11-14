@@ -40,25 +40,6 @@ export const navigation = [
   { id: 'mission-history', label: 'Mission log', description: 'Previous flights' },
 ];
 
-const ACTIVE_STAGE_STORAGE_KEY = 'beyond-earth-active-stage';
-
-function readActiveStage(): GameStage | null {
-  try {
-    const savedStage = window.sessionStorage.getItem(ACTIVE_STAGE_STORAGE_KEY);
-    return navigation.some((item) => item.id === savedStage) ? savedStage as GameStage : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveActiveStage(stage: GameStage) {
-  try {
-    window.sessionStorage.setItem(ACTIVE_STAGE_STORAGE_KEY, stage);
-  } catch {
-    // Keep navigation working when browser storage is unavailable.
-  }
-}
-
 function renderFeature(stage: GameStage, onNavigate: (stage: GameStage) => void, onContinueFlight?: () => void) {
   switch (stage) {
     case 'welcome': return null;
@@ -83,23 +64,22 @@ function renderFeature(stage: GameStage, onNavigate: (stage: GameStage) => void,
 
 function GameShell() {
   const { state, dispatch, hasSavedProgress, loadWarning } = useGameState();
-  const [activeStage, setActiveStage] = useState<GameStage>('mission-design');
+  const [activeStage, setActiveStage] = useState<GameStage>('welcome');
   const [crewContinueMode, setCrewContinueMode] = useState(false);
   const [continueTarget, setContinueTarget] = useState<GameStage>('mission-design');
   const initialized = useRef(false);
 
   useEffect(() => {
     if (state.isLoaded && !initialized.current) {
-      const restoredStage = readActiveStage();
-      setActiveStage(restoredStage ?? (state.mission.stage === 'welcome' ? 'mission-design' : state.mission.stage));
+      setActiveStage('welcome');
       initialized.current = true;
     }
   }, [state.isLoaded, state.mission.stage]);
 
   const navigate = (stage: GameStage, saveCheckpoint = true) => {
+    if (!state.isLoaded && stage !== 'welcome') return;
     if (stage !== 'player-setup') setCrewContinueMode(false);
     setActiveStage(stage);
-    saveActiveStage(stage);
     if (saveCheckpoint && isMissionCheckpoint(stage)) dispatch({ type: 'SET_STAGE', stage });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

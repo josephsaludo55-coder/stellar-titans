@@ -488,6 +488,62 @@ summary { color: #dff2ff; }
 .sidebar-extras > summary { font-size: .75rem; }
 .sidebar-footer { color: #ccdaea; font-size: .7rem; }
 .sidebar-campaign small { color: #c5d7e9; font-size: .7rem; }
+
+/* Welcome screen art direction: keep mission actions on the left and the
+   astronaut/satellite composition on the illuminated planet at the right. */
+.welcome-screen {
+  background:
+    radial-gradient(ellipse at 76% 48%, rgba(121, 222, 231, .48), transparent 23rem),
+    radial-gradient(ellipse at 97% 73%, rgba(38, 104, 190, .58), transparent 38rem),
+    radial-gradient(ellipse at 12% 95%, rgba(42, 112, 138, .26), transparent 34rem),
+    linear-gradient(112deg, #142f4e 0%, #1d3c5e 48%, #214f7e 100%);
+}
+.welcome-earth {
+  z-index: 0;
+  width: min(82vw, 1540px);
+  right: -25vw;
+  top: 49%;
+  transform: translateY(-39%);
+  background: radial-gradient(circle at 35% 34%, #78d3dc 0%, #58aabd 30%, #3488ad 54%, #205b98 76%, #183e7e 100%);
+  box-shadow: -24px -8px 80px rgba(82, 197, 222, .28), inset 26px 8px 76px rgba(181, 244, 250, .24), inset -44px -16px 84px rgba(9, 34, 83, .68);
+}
+.welcome-earth img { opacity: .24; mix-blend-mode: soft-light; }
+.welcome-earth::after { background: linear-gradient(90deg, rgba(9, 29, 52, .12), transparent 58%), radial-gradient(ellipse at 30% 36%, transparent 25%, rgba(5, 24, 58, .2) 75%); box-shadow: inset 20px 8px 46px rgba(160, 241, 249, .24), inset -40px -15px 70px rgba(10, 30, 78, .58); }
+.welcome-hero { width: 100%; padding-right: 0; }
+.welcome-hero-copy { width: min(100%, 790px); }
+.welcome-screen .welcome-hero h1 { font-size: clamp(3.1rem, 6vw, 7rem); line-height: .94; }
+.welcome-screen .welcome-tagline { margin-top: 22px; }
+.welcome-screen .welcome-intro { max-width: 740px; margin-top: 12px; }
+.welcome-astronaut-stage.is-hero {
+  top: 15%;
+  right: clamp(190px, 18vw, 350px);
+  width: clamp(190px, 12vw, 235px);
+  opacity: .94;
+  filter: drop-shadow(0 18px 28px rgba(7, 18, 39, .34));
+}
+.welcome-satellite {
+  top: 51%;
+  right: clamp(18px, 4vw, 76px);
+  width: clamp(290px, 22vw, 430px);
+  filter: drop-shadow(0 14px 24px rgba(7, 18, 39, .34));
+}
+.welcome-header { min-height: 50px; }
+.welcome-brand { gap: 14px; font-size: .86rem; }
+.welcome-brand .brand-mark { width: 48px; height: 48px; }
+.welcome-status { color: rgba(222, 239, 251, .74); font-size: .68rem; }
+.welcome-footer { padding-top: 14px; }
+@media (max-width: 900px) and (min-width: 601px) {
+  .welcome-hero-copy { width: min(100%, 660px); }
+  .welcome-screen .welcome-hero h1 { font-size: clamp(3rem, 7vw, 5.3rem); }
+  .welcome-astronaut-stage.is-hero { top: 15%; right: 20%; width: 170px; opacity: .72; }
+  .welcome-satellite { right: 1%; width: 290px; opacity: .82; }
+}
+@media (max-width: 600px) {
+  .welcome-earth { width: 112vw; right: -52vw; top: 50%; opacity: .7; }
+  .welcome-hero-copy { width: 100%; }
+  .welcome-astronaut-stage.is-hero { top: 25%; right: 0; width: 125px; opacity: .38; }
+  .welcome-satellite { top: 68%; right: -32px; width: 190px; opacity: .52; }
+}
 .crew-account-card { background: rgba(49, 79, 117, .66); }
 .crew-account-card strong { color: white; font-size: .88rem; }
 .crew-account-card small { color: #d4e0ed; font-size: .76rem !important; }
@@ -1051,4 +1107,19 @@ summary { color: #dff2ff; }
   .flight-scene-travel-action > button { min-height: 42px; padding-inline: 13px; font-size: .66rem; }
   .orbit-deployed-satellite { width: 62px; height: 42px; }
   .launch-phase-transfer .launch-vehicle-rig { animation-duration: 2.6s; }
+}
+
+@media (max-width: 760px) {
+  .welcome-earth { width: 104vw; right: -42vw; }
+  .welcome-screen .welcome-hero h1 { font-size: clamp(2.6rem, 7vw, 4.5rem); }
+  .welcome-astronaut-stage.is-hero { top: 17%; right: 13%; width: 155px; opacity: .58; }
+  .welcome-satellite { top: 54%; right: 2%; width: clamp(190px, 34vw, 300px); opacity: .76; }
+}
+@media (max-width: 600px) {
+  .welcome-screen { height: auto; min-height: 100svh; }
+  .welcome-hero { display: block; padding: 18px 0; }
+  .welcome-hero-copy { width: 100%; }
+  .welcome-screen .welcome-hero h1 { font-size: clamp(2.2rem, 10.2vw, 3.2rem); }
+  .welcome-astronaut-stage.is-hero { top: 25%; right: 0; width: 125px; opacity: .38; }
+  .welcome-satellite { top: 68%; right: -32px; width: 190px; opacity: .52; }
 }
