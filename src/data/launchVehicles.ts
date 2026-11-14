@@ -18,9 +18,9 @@ const destinations: MissionDestinationId[] = ['moon', 'mars'];
 export const launchVehicleCatalog: LaunchVehicleProfile[] = [
   {
     id: 'pioneer-medium', name: 'Pioneer Medium (classroom vehicle)', payloadCapacityKg: 1800, estimatedCostUsd: 95000000,
-    description: 'A representative medium-lift launcher for compact robotic spacecraft and focused science missions.',
-    compatibleDestinations: destinations, compatibleArchitectures: ['orbiter', 'space-probe'],
-    limitations: ['Limited mass margin for large landers or rovers', 'Deep-space capability depends on a separate upper-stage profile'],
+    description: 'A representative medium-lift launcher for compact robotic spacecraft, including lighter landers and rovers.',
+    compatibleDestinations: destinations, compatibleArchitectures: architectures,
+    limitations: ['Surface spacecraft must stay within the 1,800 kg payload limit', 'Deep-space capability depends on a separate upper-stage profile'],
   },
   {
     id: 'horizon-heavy', name: 'Horizon Heavy (fictional)', payloadCapacityKg: 8500, estimatedCostUsd: 210000000,
