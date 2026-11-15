@@ -6,7 +6,7 @@ import { academyChapters } from '../data/academy';
 import type {
   AchievementRecord, GameState, MissionArchitectureId, MissionConfiguration, MissionDecision,
   MissionDestinationId, MissionEvaluationRecord, MissionEventCategory, MissionEventDecisionRecord,
-  MissionObjectiveId, MissionSimulationEvent, MissionSimulationPhase, MissionSimulationState, MissionStage,
+  MissionObjectiveId, MissionScienceReport, MissionSimulationEvent, MissionSimulationPhase, MissionSimulationState, MissionStage,
   TeamConfiguration,
 } from '../state/gameTypes';
 import { initialGameState } from '../state/gameState';
@@ -106,6 +106,14 @@ function isSimulationEvent(value: unknown): value is MissionSimulationEvent {
   return isRecord(value) && isString(value.id) && isOneOf(value.phase, simulationPhases) && isString(value.title) && isString(value.detail) && ['info', 'warning', 'success'].includes(String(value.severity)) && isString(value.occurredAt);
 }
 
+function isScienceReport(value: unknown): value is MissionScienceReport | null | undefined {
+  if (value === undefined || value === null) return true;
+  if (!isRecord(value) || !isString(value.collectedAt) || !isFiniteNumber(value.dataVolumeGb) || !isFiniteNumber(value.instrumentPowerWh) || !isStringArray(value.deployedInstrumentIds) || !isStringArray(value.environmentalAnalysis) || !isString(value.simulationLabel)) return false;
+  if (!Array.isArray(value.readings) || !value.readings.every((item) => isRecord(item) && isString(item.id) && isString(item.instrumentId) && isString(item.instrumentName) && isString(item.category) && isString(item.metric) && isFiniteNumber(item.value) && isString(item.unit) && isString(item.interpretation))) return false;
+  if (!Array.isArray(value.surfaceImages) || !value.surfaceImages.every((item) => isRecord(item) && isString(item.id) && isString(item.instrumentId) && isString(item.instrumentName) && isString(item.title) && isString(item.caption))) return false;
+  return Array.isArray(value.discoveries) && value.discoveries.every((item) => isRecord(item) && isString(item.id) && isString(item.title) && isString(item.evidence) && isString(item.interpretation) && ['low', 'moderate', 'high'].includes(String(item.confidence)));
+}
+
 function isSimulation(value: unknown): value is MissionSimulationState | null {
   if (value === null || value === undefined) return true;
   if (!isRecord(value) || !['active', 'completed'].includes(String(value.status)) || !isOneOf(value.phase, simulationPhases) || !isRecord(value.snapshot)) return false;
@@ -117,6 +125,9 @@ function isSimulation(value: unknown): value is MissionSimulationState | null {
   if (!Array.isArray(snapshot.instruments) || !snapshot.instruments.every((item) => isRecord(item) && isString(item.id) && isString(item.name) && isString(item.scientificPurpose) && [item.massKg, item.powerConsumptionW, item.dataGenerationMbps, item.scientificValue].every(isFiniteNumber) && Array.isArray(item.objectiveIds) && item.objectiveIds.every((id) => isOneOf(id, objectiveIds)))) return false;
   if (!isString(snapshot.dataRequirement) || !isString(snapshot.communicationRequirement) || !isString(snapshot.launchVehicleName) || !isString(snapshot.trajectoryName) || !isString(snapshot.trajectoryPhase) || !(snapshot.prioritizedObjectiveId === null || isOneOf(snapshot.prioritizedObjectiveId, objectiveIds))) return false;
   if (!Array.isArray(value.events) || !value.events.every(isSimulationEvent) || !Array.isArray(value.objectiveResults) || !value.objectiveResults.every((item) => isRecord(item) && isOneOf(item.objectiveId, objectiveIds) && isString(item.objectiveName) && isStringArray(item.supportingInstruments) && ['supported', 'unsupported'].includes(String(item.status)) && isString(item.finding))) return false;
+  const landing = value.landingRecord;
+  if (landing !== undefined && landing !== null && (!isRecord(landing) || !isFiniteNumber(landing.gridX) || landing.gridX < 0 || landing.gridX > 100 || !isFiniteNumber(landing.gridY) || landing.gridY < 0 || landing.gridY > 100 || !isString(landing.coordinateReference) || !isString(landing.landedAt) || !isFiniteNumber(landing.modeledElapsedDays) || landing.missionStatus !== 'landed')) return false;
+  if (!isScienceReport(value.scienceReport)) return false;
   return isFiniteNumber(value.scienceDataCollectedGb) && isFiniteNumber(value.dataTransmittedGb) && isFiniteNumber(value.dataRetainedGb) && (value.performanceScore === null || isFiniteNumber(value.performanceScore)) && (value.resultSummary === null || isString(value.resultSummary)) && isString(value.startedAt) && (value.completedAt === null || isString(value.completedAt)) && (value.landingAttempts === undefined || isFiniteNumber(value.landingAttempts) && Number.isInteger(value.landingAttempts) && value.landingAttempts >= 0 && value.landingAttempts <= 5) && (value.missionOutcome === undefined || value.missionOutcome === null || ['success', 'failed'].includes(String(value.missionOutcome)));
 }
 
@@ -168,7 +179,7 @@ function normalizeGameState(value: unknown, legacyChapters: string[] = []): Game
     missionEvaluationHistory: evaluationHistory,
     completedChapterIds: savedChapters,
     achievementRecords,
-    missionSimulation: simulation ? { ...simulation, landingAttempts: simulation.landingAttempts ?? 0, missionOutcome: simulation.missionOutcome ?? null } : null,
+    missionSimulation: simulation ? { ...simulation, landingAttempts: simulation.landingAttempts ?? 0, missionOutcome: simulation.missionOutcome ?? null, landingRecord: simulation.landingRecord ?? null, scienceReport: simulation.scienceReport ?? null } : null,
     mission: { stage: mission.stage, readiness: finiteOr(mission.readiness, initialGameState.mission.readiness), health: finiteOr(mission.health, initialGameState.mission.health), alerts: finiteOr(mission.alerts, initialGameState.mission.alerts) },
     selectedMissionId: isOneOf(value.selectedMissionId, destinations) ? value.selectedMissionId : null,
     isLoaded: true,

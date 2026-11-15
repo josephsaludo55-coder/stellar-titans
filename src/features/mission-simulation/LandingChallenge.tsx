@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { MissionSimulationSnapshot } from '../../state/gameTypes';
+import type { MissionLandingRecord, MissionSimulationSnapshot } from '../../state/gameTypes';
 
 type FlightStatus = 'ready' | 'flying' | 'landed' | 'crashed';
 interface FlightState { x: number; y: number; vx: number; vy: number; fuel: number; status: FlightStatus; }
@@ -8,10 +8,11 @@ type FlightControl = 'left' | 'right' | 'thrust';
 const startState: FlightState = { x: 48, y: 10, vx: 0, vy: 0, fuel: 100, status: 'ready' };
 const obstacles = [{ x: 53, y: 51, size: 'large' }, { x: 69, y: 69, size: 'small' }, { x: 39, y: 77, size: 'small' }] as const;
 
-export function LandingChallenge({ snapshot, failedAttempts, onAttemptFailed, onLanded }: { snapshot: MissionSimulationSnapshot; failedAttempts: number; onAttemptFailed: () => void; onLanded: () => void }) {
-  const [flight, setFlight] = useState<FlightState>(startState);
+export function LandingChallenge({ snapshot, failedAttempts, onAttemptFailed, onLanded, onContinueToScience, landingRecord }: { snapshot: MissionSimulationSnapshot; failedAttempts: number; onAttemptFailed: () => void; onLanded: (gridX: number, gridY: number) => void; onContinueToScience: () => void; landingRecord?: MissionLandingRecord | null }) {
+  const [flight, setFlight] = useState<FlightState>(() => landingRecord ? { ...startState, x: landingRecord.gridX, y: landingRecord.gridY, status: 'landed' } : startState);
   const flightRef = useRef(flight);
   const failureRecorded = useRef(false);
+  const landingRecorded = useRef(Boolean(landingRecord));
   const held = useRef(new Set<FlightControl>());
   const arenaRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<HTMLElement>(null);
@@ -75,6 +76,12 @@ export function LandingChallenge({ snapshot, failedAttempts, onAttemptFailed, on
     if (!landed) return;
     held.current.clear();
   }, [landed]);
+
+  useEffect(() => {
+    if (!landed || landingRecorded.current) return;
+    landingRecorded.current = true;
+    onLanded(flight.x, flight.y);
+  }, [landed, flight.x, flight.y, onLanded]);
 
   useEffect(() => {
     if (!crashed || failureRecorded.current) return;
@@ -181,7 +188,7 @@ export function LandingChallenge({ snapshot, failedAttempts, onAttemptFailed, on
       <div className="landing-speed">↓ {Math.max(0, flight.vy).toFixed(1)} <small>m/s</small></div>
       {flight.status === 'ready' ? <div className="landing-overlay"><div className="landing-briefing"><span className="landing-caution-mark" aria-hidden="true">!</span><strong>DESCENT CAUTION</strong><p>Rocks ahead. Use short engine bursts to slow down and save fuel. Land gently inside the green zone.</p><small>← → STEER <i>·</i> ↑ / SPACE THRUST</small><button type="button" className="landing-start" onClick={begin}>BEGIN DESCENT <span aria-hidden="true">▶</span></button></div></div> : null}
       {crashed ? <div className="landing-overlay"><div className="landing-result-card"><span>FLIGHT RESET</span><strong>{flight.fuel <= 0 ? 'OUT OF FUEL' : obstacles.some((rock) => Math.hypot((flight.x - rock.x) * .78, flight.y - rock.y) < 7) ? 'ROCKY TERRAIN' : !hasLandingGear ? 'LANDING GEAR NEEDED' : 'TOUCHDOWN TOO FAST'}</strong><button type="button" className="landing-start" onClick={begin}>TRY AGAIN <span aria-hidden="true">↻</span></button></div></div> : null}
-      {landed ? <div className="landing-overlay"><div className="landing-result-card landing-result-success"><span>TOUCHDOWN CONFIRMED</span><strong>SAFE ON {snapshot.destinationName.toUpperCase()}</strong><button type="button" className="landing-start" onClick={onLanded}>RETURN TO MISSION <span aria-hidden="true">→</span></button></div></div> : null}
+      {landed ? <div className="landing-overlay landing-touchdown-overlay"><div className="landing-result-card landing-result-success landing-touchdown-card"><span>🛬 TOUCHDOWN · SCIENCE AUTO-STARTED</span><strong>SAFE ON {snapshot.destinationName.toUpperCase()}</strong><div className="touchdown-telemetry"><span>GRID POSITION<strong>X {flight.x.toFixed(1)} · Y {flight.y.toFixed(1)}</strong></span><span>MISSION CLOCK<strong>T+{snapshot.durationDays} modeled days</strong></span><span>ONBOARD SCIENCE<strong>{snapshot.instruments.length} selected instruments</strong></span></div><p>Instruments are recording data at the landing site. Your simulated readings are ready.</p><button type="button" className="landing-start" onClick={onContinueToScience}>OPEN SCIENCE DASHBOARD <span aria-hidden="true">→</span></button></div></div> : null}
     </div>
     <div className="landing-game-controls">
       <div className="landing-pad-legend"><i /> Landing zone <span>·</span> <b>Keep your speed low</b></div>

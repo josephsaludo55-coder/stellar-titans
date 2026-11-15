@@ -235,6 +235,49 @@ export interface MissionSimulationEvent {
   severity: 'info' | 'warning' | 'success';
   occurredAt: string;
 }
+export interface MissionLandingRecord {
+  gridX: number;
+  gridY: number;
+  coordinateReference: string;
+  landedAt: string;
+  modeledElapsedDays: number;
+  missionStatus: 'landed';
+}
+export interface MissionScientificReading {
+  id: string;
+  instrumentId: string;
+  instrumentName: string;
+  category: string;
+  metric: string;
+  value: number;
+  unit: string;
+  interpretation: string;
+}
+export interface MissionSurfaceImage {
+  id: string;
+  instrumentId: string;
+  instrumentName: string;
+  title: string;
+  caption: string;
+}
+export interface MissionScientificDiscovery {
+  id: string;
+  title: string;
+  evidence: string;
+  interpretation: string;
+  confidence: 'low' | 'moderate' | 'high';
+}
+export interface MissionScienceReport {
+  collectedAt: string;
+  dataVolumeGb: number;
+  instrumentPowerWh: number;
+  deployedInstrumentIds: string[];
+  readings: MissionScientificReading[];
+  surfaceImages: MissionSurfaceImage[];
+  environmentalAnalysis: string[];
+  discoveries: MissionScientificDiscovery[];
+  simulationLabel: string;
+}
 export interface MissionSimulationState {
   status: 'active' | 'completed';
   phase: MissionSimulationPhase;
@@ -250,6 +293,8 @@ export interface MissionSimulationState {
   completedAt: string | null;
   landingAttempts?: number;
   missionOutcome?: 'success' | 'failed' | null;
+  landingRecord?: MissionLandingRecord | null;
+  scienceReport?: MissionScienceReport | null;
 }
 
 export type GameAction =
@@ -274,7 +319,7 @@ export type GameAction =
   | { type: 'RESET_PROGRESS' }
   | { type: 'START_MISSION_SIMULATION' }
   | { type: 'RECORD_LANDING_FAILURE' }
-  | { type: 'CONFIRM_MISSION_LANDING' }
+  | { type: 'CONFIRM_MISSION_LANDING'; gridX: number; gridY: number }
   | { type: 'ADVANCE_MISSION_SIMULATION' }
   | { type: 'RUN_MISSION_SCIENCE' }
   | { type: 'TRANSMIT_MISSION_DATA' }

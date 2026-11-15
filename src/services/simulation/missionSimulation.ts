@@ -6,7 +6,7 @@ import { calculateMissionResources } from '../calculations/missionResources';
 import { validateSpacecraftSelection } from '../calculations/spacecraftDesign';
 import { validateLaunchConfiguration } from '../validation/launchConfiguration';
 import { validateMissionConfiguration } from '../validation/missionDesign';
-import type { GameState, MissionSimulationEvent, MissionSimulationPhase, MissionSimulationSnapshot, MissionSimulationState } from '../../state/gameTypes';
+import type { GameState, MissionLandingRecord, MissionScienceReport, MissionSimulationEvent, MissionSimulationPhase, MissionSimulationSnapshot, MissionSimulationState } from '../../state/gameTypes';
 
 export const MISSION_SIMULATION_ASSUMPTIONS = [
   'This is a deterministic educational sequence model. It does not propagate orbits, calculate transfer windows, or model real launch vehicle performance.',
@@ -111,7 +111,7 @@ export function startMissionSimulation(state: GameState): MissionSimulationState
     events: [createEvent('pre-launch', 'Pre-launch checks passed', `${snapshot.missionName}: ${snapshot.totalMassKg.toLocaleString()} kg spacecraft, ${snapshot.powerGenerationW} W power generation, ${snapshot.instruments.length} selected instruments, ${snapshot.launchVehicleName}, and ${snapshot.trajectoryName} verified against the educational mission checks.`, 'success', 1)],
     scienceDataCollectedGb: 0, dataTransmittedGb: 0, dataRetainedGb: 0,
     objectiveResults: [], performanceScore: null, resultSummary: null, startedAt, completedAt: null,
-    landingAttempts: 0, missionOutcome: null,
+    landingAttempts: 0, missionOutcome: null, landingRecord: null, scienceReport: null,
   };
 }
 
@@ -141,10 +141,92 @@ export function recordLandingFailure(simulation: MissionSimulationState | null):
   };
 }
 
-export function confirmMissionLanding(simulation: MissionSimulationState | null): MissionSimulationState | null {
+function makeLandingRecord(snapshot: MissionSimulationSnapshot, gridX: number, gridY: number): MissionLandingRecord {
+  return {
+    gridX: Number(Math.max(0, Math.min(100, gridX)).toFixed(1)),
+    gridY: Number(Math.max(0, Math.min(100, gridY)).toFixed(1)),
+    coordinateReference: 'Virtual surface grid, 0-100 units; educational simulation only',
+    landedAt: new Date().toISOString(),
+    modeledElapsedDays: snapshot.durationDays,
+    missionStatus: 'landed',
+  };
+}
+
+function createScienceCollection(snapshot: MissionSimulationSnapshot, landing: MissionLandingRecord): { report: MissionScienceReport; scienceDataCollectedGb: number; objectiveResults: MissionSimulationState['objectiveResults'] } {
+  const linkCapacityGb = snapshot.dailyDownlinkCapacityGb * snapshot.durationDays;
+  const capacityGb = snapshot.storageCapacityGb + linkCapacityGb;
+  const powerFactor = snapshot.powerDemandW > 0 ? Math.min(1, snapshot.powerGenerationW / snapshot.powerDemandW) : 0;
+  const scienceDataCollectedGb = Math.max(0, Math.min(snapshot.estimatedMissionDataGb, capacityGb) * powerFactor);
+  const deployed = powerFactor > 0 ? snapshot.instruments : [];
+  const moon = snapshot.destination === 'moon';
+  const readings: MissionScienceReport['readings'] = [];
+  const surfaceImages: MissionScienceReport['surfaceImages'] = [];
+  const push = (instrumentId: string, category: string, metric: string, value: number, unit: string, interpretation: string) => {
+    const instrument = deployed.find((item) => item.id === instrumentId);
+    if (!instrument) return;
+    readings.push({ id: `${instrumentId}-${metric.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, instrumentId, instrumentName: instrument.name, category, metric, value: Number(value.toFixed(2)), unit, interpretation });
+  };
+  const addImage = (instrumentId: string, title: string, caption: string) => {
+    const instrument = deployed.find((item) => item.id === instrumentId);
+    if (instrument) surfaceImages.push({ id: `${instrumentId}-surface-view`, instrumentId, instrumentName: instrument.name, title, caption });
+  };
+
+  if (deployed.some((item) => item.id === 'scientific-camera')) {
+    addImage('scientific-camera', 'Landing site panorama', `A generated ${moon ? 'lunar' : 'martian'} surface view centered near virtual grid X ${landing.gridX}, Y ${landing.gridY}.`);
+    addImage('scientific-camera', 'Terrain context frame', 'A second simulated frame records nearby terrain and landing conditions.');
+  }
+  if (deployed.some((item) => item.id === 'spectrometer' || item.id === 'spectral-imaging-system')) {
+    const mineral = moon ? 'plagioclase-rich basaltic signature' : 'basaltic and iron-oxide spectral signature';
+    if (deployed.some((item) => item.id === 'spectrometer')) push('spectrometer', 'Composition', 'Dominant spectral class', moon ? 1 : 1, 'class index', `The measured bands are consistent with a ${mineral}; this is a simplified simulated classification, not a laboratory-confirmed sample.`);
+    if (deployed.some((item) => item.id === 'spectral-imaging-system')) push('spectral-imaging-system', 'Composition map', 'Mineral signature coverage', moon ? 68 : 74, '% of sampled scene', `The simulated map highlights areas with a ${mineral} signature for follow-up.`);
+  }
+  if (deployed.some((item) => item.id === 'thermal-sensor')) push('thermal-sensor', 'Temperature', 'Surface brightness temperature', moon ? -34 : -58, '°C', 'A single simulated surface observation; real values vary with local time, terrain, and viewing geometry.');
+  if (deployed.some((item) => item.id === 'environmental-sensors')) {
+    push('environmental-sensors', 'Temperature', moon ? 'Near-surface temperature' : 'Air temperature', moon ? -41 : -63, '°C', 'A simulated local sensor reading at the landing site.');
+    push('environmental-sensors', 'Radiation', 'Dose rate', moon ? 0.34 : 0.22, 'mSv/day', 'Illustrative modeled surface dose rate; it is not a forecast or safety assessment.');
+    if (!moon) {
+      push('environmental-sensors', 'Atmosphere', 'Surface pressure', 610, 'Pa', 'A representative simulated pressure for a thin Mars-like atmosphere.');
+      push('environmental-sensors', 'Atmosphere', 'Carbon dioxide fraction', 95.0, '%', 'A simplified modeled composition reading; no real atmosphere was sampled.');
+    }
+  }
+  if (deployed.some((item) => item.id === 'radar')) {
+    push('radar', 'Subsurface', 'Layered echo depth', 2.4, 'm', 'A modeled shallow reflector suggests a change in subsurface material; radar echoes alone do not confirm water or ice.');
+    push('radar', 'Subsurface', 'Possible ice-like reflector index', 0.38, 'relative index', 'This ambiguous simulated echo can have several causes and is not evidence that water ice is present.');
+  }
+  if (deployed.some((item) => item.id === 'magnetometer')) push('magnetometer', 'Magnetism', 'Local magnetic field', moon ? 8.6 : 14.2, 'nT', 'A deterministic educational field value; spacecraft interference and local geology are not modeled.');
+  if (deployed.some((item) => item.id === 'seismometer')) push('seismometer', 'Seismology', 'Ground motion RMS', moon ? 0.8 : 1.3, 'µm/s', 'A quiet-site simulated background measurement; no real quake or impact is asserted.');
+
+  const objectiveResults = snapshot.objectives.map((objective) => {
+    const supportingInstruments = deployed.filter((instrument) => instrument.objectiveIds.includes(objective.id)).map((instrument) => instrument.name);
+    const supported = supportingInstruments.length > 0 && scienceDataCollectedGb > 0;
+    return { objectiveId: objective.id, objectiveName: objective.name, supportingInstruments, status: supported ? 'supported' as const : 'unsupported' as const, finding: supported ? `Simulated measurements from ${supportingInstruments.join(', ')} provide evidence relevant to this objective.` : 'No selected instrument produced usable data for this objective.' };
+  });
+  const hasRadar = deployed.some((item) => item.id === 'radar');
+  const hasComposition = deployed.some((item) => item.id === 'spectrometer' || item.id === 'spectral-imaging-system');
+  const discoveries: MissionScienceReport['discoveries'] = [];
+  if (hasComposition) discoveries.push({ id: 'composition-signature', title: 'Composition patterns mapped', evidence: readings.filter((reading) => reading.category.includes('Composition')).map((reading) => reading.metric).join(', '), interpretation: 'The simulated spectrum supports a broad material class for this site. A spectrum is an interpretation aid; it is not a returned sample or definitive mineral assay.', confidence: 'moderate' });
+  if (hasRadar) discoveries.push({ id: 'subsurface-reflector', title: 'Subsurface reflector detected', evidence: 'Radar echo depth and relative reflector index', interpretation: 'The echo is consistent with a boundary between materials. It does not confirm water, ice, or any specific substance.', confidence: 'low' });
+  if (deployed.some((item) => item.id === 'scientific-camera')) discoveries.push({ id: 'terrain-context', title: 'Landing terrain documented', evidence: 'Two generated camera frames from the virtual landing grid', interpretation: 'Images provide context for the simulated landing site and help relate instrument readings to visible terrain.', confidence: 'moderate' });
+  const environmentalAnalysis = [
+    `Destination model: ${snapshot.destinationName}. All values are deterministic educational simulation measurements.`,
+    moon ? 'No atmospheric readings are generated for the Moon; its modeled environment is treated as airless.' : deployed.some((item) => item.id === 'environmental-sensors') ? 'Atmospheric pressure and composition are reported because the selected Environmental Sensor Suite supports them at Mars.' : 'Mars atmospheric values are unavailable because no Environmental Sensor Suite was selected.',
+    hasRadar ? 'Radar returns are reported as ambiguous subsurface structure; no water or ice detection is confirmed.' : 'No subsurface or water-ice indicator is reported because Ground-Penetrating Radar was not selected.',
+  ];
+  const instrumentPowerWh = deployed.reduce((total, instrument) => total + instrument.powerConsumptionW, 0) * 24 * snapshot.durationDays * 0.1;
+  return {
+    report: { collectedAt: new Date().toISOString(), dataVolumeGb: scienceDataCollectedGb, instrumentPowerWh: Number(instrumentPowerWh.toFixed(1)), deployedInstrumentIds: deployed.map((instrument) => instrument.id), readings, surfaceImages, environmentalAnalysis, discoveries, simulationLabel: 'EDUCATIONAL MISSION SIMULATION DATA · NOT ACTUAL PLANETARY OR NASA RESULTS' },
+    scienceDataCollectedGb,
+    objectiveResults,
+  };
+}
+
+export function confirmMissionLanding(simulation: MissionSimulationState | null, gridX: number, gridY: number): MissionSimulationState | null {
   if (!simulation || simulation.status !== 'active' || simulation.phase !== 'arrival' || simulation.missionOutcome === 'failed') return simulation;
-  const event = createEvent('arrival', 'Safe touchdown confirmed', `${simulation.snapshot.architectureName} spacecraft landed safely at ${simulation.snapshot.destinationName}. Surface science operations may begin.`, 'success', simulation.events.length + 1);
-  return { ...simulation, missionOutcome: 'success', events: [...simulation.events, event] };
+  if (simulation.landingRecord && simulation.scienceReport) return simulation;
+  const landingRecord = makeLandingRecord(simulation.snapshot, gridX, gridY);
+  const { report, scienceDataCollectedGb, objectiveResults } = createScienceCollection(simulation.snapshot, landingRecord);
+  const event = createEvent('arrival', 'Safe touchdown and science collection', `${simulation.snapshot.architectureName} landed safely at ${simulation.snapshot.destinationName}. ${report.deployedInstrumentIds.length} selected instrument(s) began collecting ${scienceDataCollectedGb.toFixed(2)} GB of simulated science data automatically.`, 'success', simulation.events.length + 1);
+  return { ...simulation, missionOutcome: 'success', landingRecord, scienceReport: report, scienceDataCollectedGb, objectiveResults, events: [...simulation.events, event] };
 }
 
 const sequentialPhases: MissionSimulationPhase[] = ['pre-launch', 'countdown', 'launch', 'deployment', 'cruise', 'arrival', 'scientific-operations', 'communication', 'completion'];
@@ -152,7 +234,9 @@ const sequentialPhases: MissionSimulationPhase[] = ['pre-launch', 'countdown', '
 export function advanceMissionSimulation(simulation: MissionSimulationState | null): MissionSimulationState | null {
   if (!simulation || simulation.status !== 'active') return simulation;
   const currentIndex = sequentialPhases.indexOf(simulation.phase);
-  if (currentIndex < 0 || currentIndex >= sequentialPhases.length - 1 || simulation.phase === 'scientific-operations' || simulation.phase === 'communication') return simulation;
+  if (currentIndex < 0 || currentIndex >= sequentialPhases.length - 1 || simulation.phase === 'communication') return simulation;
+  if (simulation.phase === 'arrival' && simulation.missionOutcome !== 'success') return simulation;
+  if (simulation.phase === 'scientific-operations' && !simulation.scienceReport) return simulation;
   const nextPhase = sequentialPhases[currentIndex + 1];
   const snapshot = simulation.snapshot;
   const eventDetails: Record<MissionSimulationPhase, { title: string; detail: string; severity: MissionSimulationEvent['severity'] }> = {
@@ -162,7 +246,7 @@ export function advanceMissionSimulation(simulation: MissionSimulationState | nu
     deployment: { title: 'Spacecraft separation confirmed', detail: `${snapshot.missionName} separated from its launch vehicle. ${snapshot.powerGenerationW} W nominal power and ${snapshot.downlinkMbps.toFixed(2)} Mbps downlink are available in the selected system model.`, severity: 'success' },
     cruise: { title: 'Cruise segment complete', detail: `The configured ${snapshot.durationDays}-day mission cruise is represented as a compressed sequence step; no orbital or trajectory physics are propagated.`, severity: 'info' },
     arrival: { title: `${snapshot.destinationName} arrival`, detail: `${snapshot.destinationEnvironment} Operations proceed according to the selected ${snapshot.architectureName.toLowerCase()} architecture.`, severity: 'success' },
-    'scientific-operations': { title: 'Science operations ready', detail: `${snapshot.instruments.length} selected instruments are ready to investigate ${snapshot.objectives.length} configured objectives.`, severity: 'info' },
+    'scientific-operations': { title: 'Landing science dashboard ready', detail: `${simulation.scienceReport?.deployedInstrumentIds.length ?? 0} deployed instrument(s) automatically collected ${simulation.scienceDataCollectedGb.toFixed(2)} GB at touchdown.`, severity: 'success' },
     communication: { title: 'Communication pass ready', detail: `${snapshot.downlinkMbps.toFixed(2)} Mbps selected downlink supports up to ${snapshot.dailyDownlinkCapacityGb.toFixed(2)} GB/day in the simplified contact model.`, severity: 'info' },
     completion: { title: 'Mission evaluation ready', detail: 'Science collection and communication results are available for evaluation.', severity: 'success' },
   };
@@ -172,6 +256,7 @@ export function advanceMissionSimulation(simulation: MissionSimulationState | nu
 
 export function runMissionScience(simulation: MissionSimulationState | null): MissionSimulationState | null {
   if (!simulation || simulation.status !== 'active' || simulation.phase !== 'scientific-operations') return simulation;
+  if (simulation.scienceReport) return { ...simulation, phase: 'communication' };
   const snapshot = simulation.snapshot;
   const missionLinkVolumeGb = snapshot.dailyDownlinkCapacityGb * snapshot.durationDays;
   const totalHandlingCapacityGb = snapshot.storageCapacityGb + missionLinkVolumeGb;

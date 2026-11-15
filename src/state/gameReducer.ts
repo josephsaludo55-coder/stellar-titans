@@ -233,7 +233,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
     case 'CONFIRM_MISSION_LANDING': {
-      const missionSimulation = confirmMissionLanding(state.missionSimulation);
+      const missionSimulation = confirmMissionLanding(state.missionSimulation, action.gridX, action.gridY);
       return missionSimulation ? { ...state, missionSimulation } : state;
     }
     case 'ADVANCE_MISSION_SIMULATION':

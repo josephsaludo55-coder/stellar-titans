@@ -86,10 +86,15 @@ check(validateSimulationReadiness(flight).length === 0, 'configured mission pass
 flight = gameReducer(flight, { type: 'START_MISSION_SIMULATION' });
 check(flight.missionSimulation?.phase === 'pre-launch', 'preflight starts the real configured mission');
 while (flight.missionSimulation?.phase !== 'scientific-operations' && flight.missionSimulation?.phase !== 'completion') {
-  flight = gameReducer(flight, { type: 'ADVANCE_MISSION_SIMULATION' });
+  if (flight.missionSimulation?.phase === 'arrival') {
+    flight = gameReducer(flight, { type: 'CONFIRM_MISSION_LANDING', gridX: 84.5, gridY: 88 });
+    flight = gameReducer(flight, { type: 'ADVANCE_MISSION_SIMULATION' });
+  } else {
+    flight = gameReducer(flight, { type: 'ADVANCE_MISSION_SIMULATION' });
+  }
 }
 flight = gameReducer(flight, { type: 'RUN_MISSION_SCIENCE' });
-check(flight.missionSimulation?.phase === 'communication' && flight.missionSimulation.scienceDataCollectedGb > 0, 'arrival activates compatible science instrument and collects data');
+check(flight.missionSimulation?.phase === 'communication' && flight.missionSimulation.scienceDataCollectedGb > 0 && flight.missionSimulation.scienceReport?.readings.length, 'successful touchdown automatically records landing coordinates and collects data from selected instruments');
 flight = gameReducer(flight, { type: 'TRANSMIT_MISSION_DATA' });
 flight = gameReducer(flight, { type: 'COMPLETE_MISSION_SIMULATION' });
 check(flight.missionSimulation?.status === 'completed' && flight.missionEvaluationHistory.length === 1, 'data return produces saved mission evaluation');

@@ -10,6 +10,8 @@ import { WorldSphere } from '../../components/game/WorldSphere';
 import { RocketVehicleArtwork } from '../../components/game/RocketVehicleArtwork';
 import { OrbitPlayground } from './OrbitPlayground';
 import { LandingChallenge } from './LandingChallenge';
+import { MissionScienceDashboard } from './MissionScienceDashboard';
+import { downloadMissionReportPdf } from '../../services/science/missionReportPdf';
 
 const phaseSequence: Array<{ id: MissionSimulationPhase; label: string }> = [
   { id: 'pre-launch', label: 'Pre-launch' }, { id: 'countdown', label: 'Countdown' },
@@ -75,7 +77,7 @@ export function MissionSimulationFeature({ onNavigate }: { onNavigate: (stage: M
         {simulation.status === 'completed' && <div className="simulation-run-banner"><strong>{simulation.missionOutcome === 'failed' ? 'MISSION FAILED' : 'MISSION RUN COMPLETE'}</strong><span>Results are stored with the launch-time mission configuration.</span></div>}
         {simulation.status === 'active' && !(simulation.phase === 'deployment' && orbitPanelActive) && <div className="simulation-run-banner is-active"><strong>ACTIVE RUN · {simulation.snapshot.missionName}</strong><span>Simulation uses the configuration snapshot captured at pre-launch.</span></div>}
         {simulation.phase === 'pre-launch' || simulation.phase === 'countdown' || simulation.phase === 'launch' ? <LaunchJourneyScene simulation={simulation} dispatch={dispatch} /> : null}
-        {simulation.phase === 'arrival' ? <>{activeSimulationStage}{activeFlightScene}</> : <>{activeFlightScene}{activeSimulationStage}</>}
+        {simulation.phase === 'arrival' || simulation.phase === 'scientific-operations' ? <>{activeSimulationStage}{activeFlightScene}</> : <>{activeFlightScene}{activeSimulationStage}</>}
         {simulation.status === 'completed' ? <details className="simulation-history-details"><summary>How this game flight is modeled</summary><ul className="simulation-assumptions">{MISSION_SIMULATION_ASSUMPTIONS.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul></details> : null}
       </>}
     </section>
@@ -217,25 +219,15 @@ function ArrivalStage({ simulation, dispatch }: { simulation: MissionSimulationS
     <LandingChallenge
       snapshot={snapshot}
       failedAttempts={simulation.landingAttempts ?? 0}
+      landingRecord={simulation.landingRecord}
       onAttemptFailed={() => dispatch({ type: 'RECORD_LANDING_FAILURE' })}
-      onLanded={() => {
-        dispatch({ type: 'CONFIRM_MISSION_LANDING' });
-        dispatch({ type: 'ADVANCE_MISSION_SIMULATION' });
-      }}
+      onLanded={(gridX, gridY) => dispatch({ type: 'CONFIRM_MISSION_LANDING', gridX, gridY })}
+      onContinueToScience={() => dispatch({ type: 'ADVANCE_MISSION_SIMULATION' })}
     />
   </Card>;
 }
 function ScientificOperationsStage({ simulation, dispatch }: { simulation: MissionSimulationState; dispatch: ReturnType<typeof useGameState>['dispatch'] }) {
-  const snapshot = simulation.snapshot;
-  const prioritizedObjectives = [...snapshot.objectives].sort((a, b) => Number(b.id === snapshot.prioritizedObjectiveId) - Number(a.id === snapshot.prioritizedObjectiveId));
-  return <Card title="7 · Science time" subtitle="Choose your top science goal and collect data">
-    <div className="science-operations-layout"><div><h3>Priority objectives</h3><ol className="science-objective-list">{prioritizedObjectives.map((objective, index) => {
-      const matched = snapshot.instruments.filter((instrument) => instrument.objectiveIds.includes(objective.id));
-      const isPriority = objective.id === snapshot.prioritizedObjectiveId;
-      return <li key={objective.id} className={isPriority ? 'is-primary-objective' : ''}><span>{isPriority ? '★' : String(index + 1).padStart(2, '0')}</span><div><strong>{objective.name}{isPriority ? ' · PRIMARY' : ''}</strong><small>{matched.length ? `Evidence from ${matched.map((instrument) => instrument.name).join(', ')}` : 'No selected instrument directly addresses this objective.'}</small></div></li>;
-    })}</ol></div><div><h3>Selected payload</h3><div className="science-instrument-list">{snapshot.instruments.map((instrument) => <article key={instrument.id}><span>STANDBY</span><strong>{instrument.name}</strong><small>{instrument.scientificPurpose}</small><em>{instrument.dataGenerationMbps} Mbps · {instrument.powerConsumptionW} W</em></article>)}</div></div></div>
-    <Button onClick={() => dispatch({ type: 'RUN_MISSION_SCIENCE' })}>Collect science data →</Button>
-  </Card>;
+  return <MissionScienceDashboard simulation={simulation} onContinue={() => dispatch({ type: 'ADVANCE_MISSION_SIMULATION' })} />;
 }
 
 function CommunicationStage({ simulation, dispatch }: { simulation: MissionSimulationState; dispatch: ReturnType<typeof useGameState>['dispatch'] }) {
@@ -250,13 +242,19 @@ function CommunicationStage({ simulation, dispatch }: { simulation: MissionSimul
 }
 
 function CompletionStage({ simulation, dispatch, onNavigate }: { simulation: MissionSimulationState; dispatch: ReturnType<typeof useGameState>['dispatch']; onNavigate: (stage: MissionStage) => void }) {
+  const { state } = useGameState();
+  const [showScienceReport, setShowScienceReport] = useState(false);
   const snapshot = simulation.snapshot;
   const evaluated = simulation.status === 'completed';
   const missionFailed = simulation.missionOutcome === 'failed';
+  const evaluation = state.missionEvaluationHistory.find((record) => record.missionName === snapshot.missionName && record.destinationName === snapshot.destinationName);
+  if (showScienceReport && simulation.scienceReport) return <MissionScienceDashboard simulation={simulation} continueLabel="BACK TO MISSION RESULTS" onContinue={() => setShowScienceReport(false)} />;
   return <Card title={missionFailed ? 'Mission failed' : '9 · Mission complete'} subtitle={missionFailed ? 'Five landing attempts were used' : evaluated ? 'Here is how your mission went' : 'Ready to see your mission score?'}>
     {evaluated ? <>
       <div className={`mission-result-score${missionFailed ? ' mission-result-failed' : ''}`}><span>{missionFailed ? 'MISSION FAILED · LANDING ATTEMPTS USED' : 'MISSION PERFORMANCE INDEX'}</span><strong>{simulation.performanceScore}<small>/100</small></strong><p>{simulation.resultSummary}</p></div>
       <div className="mission-result-metrics"><span>Science data collected<strong>{simulation.scienceDataCollectedGb.toFixed(2)} GB</strong></span><span>Transmitted to Earth<strong>{simulation.dataTransmittedGb.toFixed(2)} GB</strong></span><span>Retained onboard<strong>{simulation.dataRetainedGb.toFixed(2)} GB</strong></span><span>Selected spacecraft<strong>{snapshot.totalMassKg.toLocaleString()} kg · {snapshot.launchVehicleName}</strong></span></div>
+      {simulation.scienceReport ? <Button variant="secondary" onClick={() => setShowScienceReport(true)}>🔬 Review landing science</Button> : null}
+      <Button variant="secondary" onClick={() => downloadMissionReportPdf(simulation, evaluation)}>⬇ Download science report PDF</Button>
       {missionFailed ? <Button variant="secondary" onClick={() => onNavigate('mission-evaluation')}>View mission report</Button> : <><h3>Objective findings</h3><div className="mission-objective-results">{simulation.objectiveResults.map((result) => <article key={result.objectiveId} className={`result-${result.status}`}><span>{result.status === 'supported' ? 'SUPPORTED' : 'UNADDRESSED'}</span><strong>{result.objectiveName}</strong><small>{result.finding}</small></article>)}</div><Button variant="secondary" onClick={() => onNavigate('mission-design')}>Edit mission plan</Button></>}
       <Button variant="secondary" onClick={() => onNavigate('mission-history')}>View finished missions</Button>
       <Button variant="ghost" onClick={() => dispatch({ type: 'START_MISSION_SIMULATION' })}>{missionFailed ? 'Retry this mission' : 'Replay this mission'}</Button>
