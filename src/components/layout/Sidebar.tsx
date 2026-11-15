@@ -40,13 +40,13 @@ export function Sidebar({ navItems, activeItemId, onNavigate, stage }: SidebarPr
     </button>
     <div className="sidebar-campaign"><span className="sidebar-orbit" aria-hidden="true">◉</span><span><small>YOUR MISSION</small><strong>{stageIndex < 0 ? 'READY TO PLAY' : `STEP ${stageIndex + 1} OF ${missionSteps.length}`}</strong></span><i /></div>
     <nav aria-label="Mission navigation" className="sidebar-nav">
-      {home ? <button type="button" className={`nav-item${activeItemId === 'welcome' ? ' active' : ''}`} onClick={() => onNavigate('welcome')}><span className="nav-item-icon" aria-hidden="true"><NavigationIcon id="welcome" /></span><span className="nav-item-label"><strong>Home</strong></span></button> : null}
+      {home ? <button type="button" className={`nav-item${activeItemId === 'welcome' ? ' active' : ''}`} onClick={() => onNavigate('welcome')}><span className="nav-item-icon nav-item-icon-welcome" aria-hidden="true"><NavigationIcon id="welcome" /></span><span className="nav-item-label"><strong>Home</strong></span></button> : null}
       <p className="nav-section-label">QUICK LINKS</p>
       <details className="sidebar-extras" open={helperItems.some((item) => item.id === activeItemId)}>
-        <summary>FLIGHT TOOLS <span>+</span></summary><div>{helperItems.map((item) => <button key={item.id} type="button" className={`nav-item${item.id === activeItemId ? ' active' : ''}`} onClick={() => onNavigate(item.id)}><span className="nav-item-icon" aria-hidden="true"><NavigationIcon id={item.id} /></span><span className="nav-item-label"><strong>{item.label}</strong></span></button>)}</div>
+        <summary>FLIGHT TOOLS <span>+</span></summary><div>{helperItems.map((item) => <button key={item.id} type="button" className={`nav-item${item.id === activeItemId ? ' active' : ''}`} onClick={() => onNavigate(item.id)}><span className={`nav-item-icon nav-item-icon-${item.id}`} aria-hidden="true"><NavigationIcon id={item.id} /></span><span className="nav-item-label"><strong>{item.label}</strong></span></button>)}</div>
       </details>
       <details className="sidebar-extras" open={utilityItems.some((item) => item.id === activeItemId)}>
-        <summary>EXPLORE &amp; LEARN <span>+</span></summary><div>{utilityItems.map((item) => <button key={item.id} type="button" className={`nav-item${item.id === activeItemId ? ' active' : ''}`} onClick={() => onNavigate(item.id)}><span className="nav-item-icon" aria-hidden="true"><NavigationIcon id={item.id} /></span><span className="nav-item-label"><strong>{item.label}</strong></span></button>)}</div>
+        <summary>EXPLORE &amp; LEARN <span>+</span></summary><div>{utilityItems.map((item) => <button key={item.id} type="button" className={`nav-item${item.id === activeItemId ? ' active' : ''}`} onClick={() => onNavigate(item.id)}><span className={`nav-item-icon nav-item-icon-${item.id}`} aria-hidden="true"><NavigationIcon id={item.id} /></span><span className="nav-item-label"><strong>{item.label}</strong></span></button>)}</div>
       </details>
     </nav>
     <div className="sidebar-footer"><span className="sidebar-online" /><span>GAME SAVED ON THIS DEVICE</span></div>

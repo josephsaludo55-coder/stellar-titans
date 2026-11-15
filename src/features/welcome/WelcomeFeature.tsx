@@ -101,11 +101,11 @@ export function WelcomeFeature({ onNavigate, onContinue, onNewFlight, hasSavedPr
           </div>
           <div className="welcome-explore-actions" role="group" aria-label="Explore more">
             <button type="button" className="welcome-quick-link" onClick={() => onNavigate('academy')}>
-              <span className="welcome-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z"/><path d="M4 17a2.5 2.5 0 0 1 2.5-2.5H20M8 7h8m-8 3h7"/></svg></span>
+              <span className="welcome-quick-icon welcome-quick-icon-academy" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z"/><path d="M4 17a2.5 2.5 0 0 1 2.5-2.5H20M8 7h8m-8 3h7"/></svg></span>
               <span>Training Bay</span><span className="welcome-quick-arrow" aria-hidden="true">→</span>
             </button>
             <button type="button" className="welcome-quick-link" onClick={() => onNavigate('spacecraft-explorer')}>
-              <span className="welcome-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2c3.8 3.1 5.5 6.3 5.5 10.5L12 21l-5.5-8.5C6.5 8.3 8.2 5.1 12 2Z"/><circle cx="12" cy="9" r="1.8"/><path d="m7 13-3 1v4l5-2m8-3 3 1v4l-5-2"/></svg></span>
+              <span className="welcome-quick-icon welcome-quick-icon-spacecraft" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2c3.8 3.1 5.5 6.3 5.5 10.5L12 21l-5.5-8.5C6.5 8.3 8.2 5.1 12 2Z"/><circle cx="12" cy="9" r="1.8"/><path d="m7 13-3 1v4l5-2m8-3 3 1v4l-5-2"/></svg></span>
               <span>Spacecraft Hangar</span><span className="welcome-quick-arrow" aria-hidden="true">→</span>
             </button>
           </div>

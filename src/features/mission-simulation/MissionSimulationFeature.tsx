@@ -11,7 +11,6 @@ import { RocketVehicleArtwork } from '../../components/game/RocketVehicleArtwork
 import { OrbitPlayground } from './OrbitPlayground';
 import { LandingChallenge } from './LandingChallenge';
 import { MissionScienceDashboard } from './MissionScienceDashboard';
-import { downloadMissionReportPdf } from '../../services/science/missionReportPdf';
 
 const phaseSequence: Array<{ id: MissionSimulationPhase; label: string }> = [
   { id: 'pre-launch', label: 'Pre-launch' }, { id: 'countdown', label: 'Countdown' },
@@ -254,7 +253,21 @@ function CompletionStage({ simulation, dispatch, onNavigate }: { simulation: Mis
       <div className={`mission-result-score${missionFailed ? ' mission-result-failed' : ''}`}><span>{missionFailed ? 'MISSION FAILED · LANDING ATTEMPTS USED' : 'MISSION PERFORMANCE INDEX'}</span><strong>{simulation.performanceScore}<small>/100</small></strong><p>{simulation.resultSummary}</p></div>
       <div className="mission-result-metrics"><span>Science data collected<strong>{simulation.scienceDataCollectedGb.toFixed(2)} GB</strong></span><span>Transmitted to Earth<strong>{simulation.dataTransmittedGb.toFixed(2)} GB</strong></span><span>Retained onboard<strong>{simulation.dataRetainedGb.toFixed(2)} GB</strong></span><span>Selected spacecraft<strong>{snapshot.totalMassKg.toLocaleString()} kg · {snapshot.launchVehicleName}</strong></span></div>
       {simulation.scienceReport ? <Button variant="secondary" onClick={() => setShowScienceReport(true)}>🔬 Review landing science</Button> : null}
-      <Button variant="secondary" onClick={() => downloadMissionReportPdf(simulation, evaluation)}>⬇ Download science report PDF</Button>
+      <Button
+        variant="secondary"
+        className="mission-report-download"
+        icon={<svg viewBox="0 0 24 24" aria-hidden="true"><path className="download-arrow" d="M12 3v11m0 0 4-4m-4 4-4-4" /><path className="download-tray" d="M5 16v4h14v-4" /></svg>}
+        onClick={async () => {
+          const { downloadMissionReportPdf } = await import('../../services/science/missionReportPdf');
+          await downloadMissionReportPdf(simulation, evaluation);
+        }}
+      >
+        <span className="mission-report-download-copy">
+          <strong>Download mission report</strong>
+          <small>PDF · Performance, science data, and mission summary</small>
+        </span>
+        <span className="mission-report-download-format" aria-hidden="true">PDF</span>
+      </Button>
       {missionFailed ? <Button variant="secondary" onClick={() => onNavigate('mission-evaluation')}>View mission report</Button> : <><h3>Objective findings</h3><div className="mission-objective-results">{simulation.objectiveResults.map((result) => <article key={result.objectiveId} className={`result-${result.status}`}><span>{result.status === 'supported' ? 'SUPPORTED' : 'UNADDRESSED'}</span><strong>{result.objectiveName}</strong><small>{result.finding}</small></article>)}</div><Button variant="secondary" onClick={() => onNavigate('mission-design')}>Edit mission plan</Button></>}
       <Button variant="secondary" onClick={() => onNavigate('mission-history')}>View finished missions</Button>
       <Button variant="ghost" onClick={() => dispatch({ type: 'START_MISSION_SIMULATION' })}>{missionFailed ? 'Retry this mission' : 'Replay this mission'}</Button>
